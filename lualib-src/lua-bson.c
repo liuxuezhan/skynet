@@ -415,8 +415,9 @@ append_one(struct bson *bs, lua_State *L, const char *key, size_t sz, int depth)
 		append_key(bs, L, BSON_BOOLEAN, key, sz);
 		write_byte(bs, lua_toboolean(L,-1));
 		break;
-	case LUA_TNIL:
-		luaL_error(L, "Bson array has a hole (nil), Use bson.null instead");
+        /* 数字key转字符串  */
+	/* case LUA_TNIL: */
+	/* 	luaL_error(L, "Bson array has a hole (nil), Use bson.null instead"); */
 	default:
 		luaL_error(L, "Invalid value type : %s", lua_typename(L,vt));
 	}
@@ -453,8 +454,13 @@ pack_dict_data(lua_State *L, struct bson *b, int depth, int kt) {
 	const char * key = NULL;
 	size_t sz;
 	switch(kt) {
-	case LUA_TNUMBER:
-		luaL_error(L, "Bson dictionary's key can't be number");
+	case LUA_TNUMBER: //数字key转字符串
+		/* luaL_error(L, "Bson dictionary's key can't be number"); */
+        lua_pushvalue(L,-2);
+        lua_insert(L,-2);
+        key = lua_tolstring(L,-2,&sz);
+        append_one(b, L, key, sz, depth);
+        lua_pop(L,2);
 		break;
 	case LUA_TSTRING:
 		key = lua_tolstring(L,-2,&sz);
@@ -608,12 +614,25 @@ unpack_dict(lua_State *L, struct bson_reader *br, bool array) {
 		int bt = read_byte(L, &t);
 		size_t klen = 0;
 		const char * key = read_cstring(L, &t, &klen);
-		if (array) {
-			int id = strtol(key, NULL, 10) + 1;
+        /////////////////////////////////////////////////////
+        /* 数字key还原  */
+		/* if (array) { */
+		/* 	int id = strtol(key, NULL, 10) + 1; */
+		/* 	lua_pushinteger(L,id); */
+		/* } else { */
+		/* 	lua_pushlstring(L, key, klen); */
+		/* } */
+
+        char* p="";
+		int id = strtol(key, &p, 10);
+		if ( strcmp(p,"")==0 ) {
+            //printf(" p = %s id = %d\n ",p,id);
 			lua_pushinteger(L,id);
 		} else {
+            //printf(" p = %s key = %s\n ",p,key);
 			lua_pushlstring(L, key, klen);
 		}
+/////////////////////////////////////////////////////////////
 		switch (bt) {
 		case BSON_REAL:
 			lua_pushnumber(L, read_double(L, &t));
