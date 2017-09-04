@@ -45,11 +45,11 @@ struct link_list {
 struct timer {
 	struct link_list near[TIME_NEAR];
 	struct link_list t[4][TIME_LEVEL];
-	struct spinlock lock;
-	uint32_t time;
-	uint32_t starttime;
-	uint64_t current;
-	uint64_t current_point;
+	struct spinlock lock;   //锁
+	uint32_t time;          //距离启动的时间差
+	uint32_t starttime;     //启动时间
+	uint64_t current;       //当前与上次时间差
+	uint64_t current_point; //当前时间
 };
 
 static struct timer * TI = NULL;
@@ -270,7 +270,7 @@ skynet_updatetime(void) {
 		TI->current_point = cp;
 	} else if (cp != TI->current_point) {
 		uint32_t diff = (uint32_t)(cp - TI->current_point);
-		TI->current_point = cp;
+		TI->current_point = cp; //需要保持到最后更新时间文件中
 		TI->current += diff;
 		int i;
 		for (i=0;i<diff;i++) {
@@ -293,9 +293,13 @@ void
 skynet_timer_init(void) {
 	TI = timer_create_timer();
 	uint32_t current = 0;
-	systime(&TI->starttime, &current);
-	TI->current = current;
+	systime(&TI->starttime, &current); 
+	TI->current = current;   
 	TI->current_point = gettime();
+    //  关闭服务器后,再启动推时间 
+    //   TI->starttime = first_start_time 首次启动时间
+    //   TI->current_point =  end_save_time 最后记录时间
+    //   TI->current =  0
 }
 
 // for profile
