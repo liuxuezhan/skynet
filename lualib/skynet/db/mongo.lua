@@ -317,6 +317,18 @@ function mongo_db:runCommand(cmd,cmd_v,...)
 	return bson_decode(doc)
 end
 
+function mongo_db:runCommand2(param)
+	local conn = self.connection
+	local request_id = conn:genId()
+	local sock = conn.__sock
+	local pack = driver.query(request_id, 0, self.__cmd, 0,	1, param.bson_cmd)
+	-- we must hold	req	(req.data),	because	req.document is	a lightuserdata, it's a	pointer	to the string (req.data)
+	local req =	sock:request(pack, request_id)
+	local doc =	req.document
+	return bson_decode(doc)
+end
+
+
 function mongo_db:getCollection(collection)
 	local col =	{
 		connection = self.connection,

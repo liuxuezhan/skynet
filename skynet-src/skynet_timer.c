@@ -43,8 +43,8 @@ struct link_list {
 };
 
 struct timer {
-	struct link_list near[TIME_NEAR];
-	struct link_list t[4][TIME_LEVEL];
+	struct link_list near[TIME_NEAR];//256个刻度严格区分
+	struct link_list t[4][TIME_LEVEL];//高层一个list->覆盖低层256个list
 	struct spinlock lock;   //锁
 	uint32_t time;          //距离启动的时间差
 	uint32_t starttime;     //启动时间
